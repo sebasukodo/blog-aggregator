@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"os"
 
 	"github.com/sebasukodo/blog-aggregator/internal/config"
 )
@@ -14,16 +14,33 @@ func main() {
 		log.Fatalf("error reading config file: %v", err)
 	}
 
-	if err = cfg.SetUser("sebasukodo"); err != nil {
-		log.Fatalf("error writing config file: %v", err)
+	cfgState := &state{
+		cfg: cfg,
 	}
 
-	cfg, err = config.Read()
-	if err != nil {
-		log.Fatalf("error reading config file: %v", err)
+	cmds := &commands{
+		cmnds: make(map[string]func(*state, command) error),
 	}
 
-	fmt.Println("DB URL:", cfg.DBURL)
-	fmt.Println("Current user:", cfg.CurrentUserName)
+	cmds.register("login", handlerLogin)
+
+	osArgs := os.Args
+
+	if len(osArgs) < 2 {
+		log.Fatal("error, not enough arguments were provided")
+	}
+
+	cmdName := osArgs[1]
+
+	cmdArguments := osArgs[2:]
+
+	cmd := command{
+		name:      cmdName,
+		arguments: cmdArguments,
+	}
+
+	if err := cmds.run(cfgState, cmd); err != nil {
+		log.Fatalf("error: %v", err)
+	}
 
 }

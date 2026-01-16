@@ -40,19 +40,13 @@ func main() {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerListUsers)
 
-	osArgs := os.Args
-
-	if len(osArgs) < 2 {
+	if len(os.Args) < 2 {
 		log.Fatal("error, not enough arguments were provided")
 	}
 
-	cmdName := osArgs[1]
-
-	cmdArguments := osArgs[2:]
-
 	cmd := command{
-		name:      cmdName,
-		arguments: cmdArguments,
+		name:      os.Args[1],
+		arguments: os.Args[2:],
 	}
 
 	if err := cmds.run(cfgState, cmd); err != nil {

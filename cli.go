@@ -24,6 +24,51 @@ type commands struct {
 	cmnds map[string]func(*state, command) error
 }
 
+func handlerFetch(s *state, cmd command) error {
+
+	if len(cmd.arguments) != 0 {
+		return fmt.Errorf("too many arguments")
+	}
+
+	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
+
+	return nil
+}
+
+func handlerListUsers(s *state, cmd command) error {
+
+	if len(cmd.arguments) != 0 {
+		return fmt.Errorf("no arguments needed for this command")
+	}
+
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	var msg string
+	for i := 0; i < len(users); i++ {
+		if i > 0 {
+			msg += "\n"
+		}
+
+		if users[i].Name == s.cfg.CurrentUserName {
+			msg += fmt.Sprintf("* %v (current)", users[i].Name)
+		} else {
+			msg += fmt.Sprintf("* %v", users[i].Name)
+		}
+	}
+
+	fmt.Println(msg)
+
+	return nil
+}
+
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.arguments) == 0 {
 		return fmt.Errorf("not enough arguments to login")
@@ -92,35 +137,6 @@ func handlerReset(s *state, cmd command) error {
 
 	return nil
 
-}
-
-func handlerListUsers(s *state, cmd command) error {
-
-	if len(cmd.arguments) != 0 {
-		return fmt.Errorf("no arguments needed for this command")
-	}
-
-	users, err := s.db.GetUsers(context.Background())
-	if err != nil {
-		return err
-	}
-
-	var msg string
-	for i := 0; i < len(users); i++ {
-		if i > 0 {
-			msg += "\n"
-		}
-
-		if users[i].Name == s.cfg.CurrentUserName {
-			msg += fmt.Sprintf("* %v (current)", users[i].Name)
-		} else {
-			msg += fmt.Sprintf("* %v", users[i].Name)
-		}
-	}
-
-	fmt.Println(msg)
-
-	return nil
 }
 
 func (c *commands) run(s *state, cmd command) error {

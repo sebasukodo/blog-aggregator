@@ -39,6 +39,7 @@ func main() {
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerListUsers)
+	cmds.register("agg", handlerFetch)
 
 	if len(os.Args) < 2 {
 		log.Fatal("error, not enough arguments were provided")

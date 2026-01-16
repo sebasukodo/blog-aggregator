@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/sebasukodo/blog-aggregator/internal/config"
+	"github.com/sebasukodo/blog-aggregator/internal/database"
 )
 
 type state struct {
+	db  *database.Queries
 	cfg *config.Config
 }
 
@@ -21,10 +26,15 @@ type commands struct {
 
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.arguments) == 0 {
-		return fmt.Errorf("no arguments were given")
+		return fmt.Errorf("not enough arguments to login")
 	}
 	if len(cmd.arguments) != 1 {
-		return fmt.Errorf("too many arguments were given")
+		return fmt.Errorf("too many arguments to login")
+	}
+
+	_, err := s.db.GetUser(context.Background(), cmd.arguments[0])
+	if err != nil {
+		return fmt.Errorf("user was not found in database: %v", err)
 	}
 
 	if err := s.cfg.SetUser(cmd.arguments[0]); err != nil {
@@ -36,6 +46,39 @@ func handlerLogin(s *state, cmd command) error {
 
 	return nil
 
+}
+
+func handlerRegister(s *state, cmd command) error {
+
+	if len(cmd.arguments) == 0 {
+		return fmt.Errorf("not enough arguments to register a new user were given")
+	}
+	if len(cmd.arguments) != 1 {
+		return fmt.Errorf("too many arguments to register a new user were given")
+	}
+
+	newUser := database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.arguments[0],
+	}
+
+	userData, err := s.db.CreateUser(context.Background(), newUser)
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf("User %v has been created", cmd.arguments[0])
+	fmt.Println(msg)
+
+	if err := handlerLogin(s, cmd); err != nil {
+		return fmt.Errorf("could not create user %s: %w", cmd.arguments[0], err)
+	}
+
+	fmt.Println(userData)
+
+	return nil
 }
 
 func (c *commands) run(s *state, cmd command) error {

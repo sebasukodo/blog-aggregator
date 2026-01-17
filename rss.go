@@ -58,6 +58,16 @@ func handlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("could not add feed: %w", err)
 	}
 
+	feedFollow := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    currentUserID.ID,
+		FeedID:    dbFeed.ID,
+	}
+
+	_, err = s.db.CreateFeedFollow(context.Background(), feedFollow)
+
 	fmt.Println("Feed has been created successfully:")
 	if err := printFeed(s, dbFeed); err != nil {
 		return err
@@ -104,6 +114,65 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 
 	return &readableData, nil
 
+}
+
+func handlerFollow(s *state, cmd command) error {
+
+	if len(cmd.arguments) == 0 {
+		return fmt.Errorf("you need to enter an URL to follow a feed")
+	}
+	if len(cmd.arguments) != 1 {
+		return fmt.Errorf("too many arguments to follow a feed")
+	}
+
+	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("could not get current user information: %w", err)
+	}
+
+	currentFeed, err := s.db.GetFeedByURL(context.Background(), cmd.arguments[0])
+	if err != nil {
+		return fmt.Errorf("could not get feed information for following: %w", err)
+	}
+
+	feedFollow := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    currentUser.ID,
+		FeedID:    currentFeed.ID,
+	}
+
+	feed, err := s.db.CreateFeedFollow(context.Background(), feedFollow)
+	if err != nil {
+		return fmt.Errorf("could not create feed follow: %w", err)
+	}
+
+	fmt.Printf("%v is now following:\n", feed.UserName)
+	fmt.Printf("- %v\n", feed.FeedName)
+
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+
+	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("could not get current user information")
+	}
+
+	list, err := s.db.GetFeedFollowsForUser(context.Background(), currentUser.ID)
+	if err != nil {
+		return fmt.Errorf("could not get following feeds information: %w", err)
+	}
+
+	fmt.Printf("You are currently following:\n")
+
+	for _, feed := range list {
+		fmt.Printf("- %v\n", feed.FeedName)
+	}
+
+	return nil
 }
 
 func handlerListAllFeeds(s *state, cmd command) error {

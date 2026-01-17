@@ -46,3 +46,7 @@ WHERE feed_follows.user_id = $1;
 
 -- name: ListAllFeeds :many
 SELECT * FROM feeds;
+
+-- name: UnfollowFeed :exec
+DELETE FROM feed_follows
+WHERE user_id = $2 AND feed_id = $1;

@@ -30,7 +30,7 @@ type RSSItem struct {
 	PubDate     string `xml:"pubDate"`
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, currentUser database.User) error {
 
 	if len(cmd.arguments) != 2 {
 		return fmt.Errorf("not enough arguments to add feed")
@@ -39,18 +39,13 @@ func handlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("second argument needs to be a valid url")
 	}
 
-	currentUserID, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return err
-	}
-
 	feed := database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Name:      cmd.arguments[0],
 		Url:       cmd.arguments[1],
-		UserID:    currentUserID.ID,
+		UserID:    currentUser.ID,
 	}
 
 	dbFeed, err := s.db.CreateFeed(context.Background(), feed)
@@ -62,7 +57,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		UserID:    currentUserID.ID,
+		UserID:    currentUser.ID,
 		FeedID:    dbFeed.ID,
 	}
 
@@ -132,18 +127,13 @@ func handlerFetch(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, currentUser database.User) error {
 
 	if len(cmd.arguments) == 0 {
 		return fmt.Errorf("you need to enter an URL to follow a feed")
 	}
 	if len(cmd.arguments) != 1 {
 		return fmt.Errorf("too many arguments to follow a feed")
-	}
-
-	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("could not get current user information: %w", err)
 	}
 
 	currentFeed, err := s.db.GetFeedByURL(context.Background(), cmd.arguments[0])
@@ -170,12 +160,7 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-
-	currentUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("could not get current user information")
-	}
+func handlerFollowing(s *state, cmd command, currentUser database.User) error {
 
 	list, err := s.db.GetFeedFollowsForUser(context.Background(), currentUser.ID)
 	if err != nil {

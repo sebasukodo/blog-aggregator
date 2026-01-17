@@ -24,22 +24,6 @@ type commands struct {
 	cmnds map[string]func(*state, command) error
 }
 
-func handlerFetch(s *state, cmd command) error {
-
-	if len(cmd.arguments) != 0 {
-		return fmt.Errorf("too many arguments")
-	}
-
-	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(feed)
-
-	return nil
-}
-
 func handlerListUsers(s *state, cmd command) error {
 
 	if len(cmd.arguments) != 0 {
@@ -124,19 +108,6 @@ func handlerRegister(s *state, cmd command) error {
 	fmt.Println(userData)
 
 	return nil
-}
-
-// This function is only for testing purposes and will be removed later
-func handlerReset(s *state, cmd command) error {
-
-	if err := s.db.ResetDatabase(context.Background()); err != nil {
-		return fmt.Errorf("cannot reset database: %v", err)
-	}
-
-	fmt.Println("All exisiting users have been removed from database...")
-
-	return nil
-
 }
 
 func (c *commands) run(s *state, cmd command) error {

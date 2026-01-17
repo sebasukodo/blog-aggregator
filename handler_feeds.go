@@ -116,6 +116,22 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 
 }
 
+func handlerFetch(s *state, cmd command) error {
+
+	if len(cmd.arguments) != 0 {
+		return fmt.Errorf("too many arguments")
+	}
+
+	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
+
+	return nil
+}
+
 func handlerFollow(s *state, cmd command) error {
 
 	if len(cmd.arguments) == 0 {

@@ -7,6 +7,11 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/sebasukodo/blog-aggregator/internal/database"
 )
 
 type RSSFeed struct {
@@ -23,6 +28,40 @@ type RSSItem struct {
 	Link        string `xml:"link"`
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+
+	if len(cmd.arguments) != 2 {
+		return fmt.Errorf("not enough arguments to add feed")
+	}
+	if !strings.HasPrefix(cmd.arguments[1], "https://") {
+		return fmt.Errorf("second argument needs to be a valid url")
+	}
+
+	currentUserID, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	feed := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.arguments[0],
+		Url:       cmd.arguments[1],
+		UserID:    currentUserID.ID,
+	}
+
+	dbFeed, err := s.db.CreateFeed(context.Background(), feed)
+	if err != nil {
+		return fmt.Errorf("could not add feed: %w", err)
+	}
+
+	fmt.Println("Feed has been created successfully:")
+	printFeed(dbFeed)
+
+	return nil
 }
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
@@ -63,4 +102,11 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 
 	return &readableData, nil
 
+}
+
+func printFeed(feed database.Feed) {
+	fmt.Printf("* ID:      %s\n", feed.ID)
+	fmt.Printf("* Name:    %s\n", feed.Name)
+	fmt.Printf("* URL:     %s\n", feed.Url)
+	fmt.Printf("* User ID: %s\n", feed.UserID)
 }
